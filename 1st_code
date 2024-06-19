@@ -1,0 +1,53 @@
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
+path_to_chromedriver = '/path/to/chromedriver'
+
+driver = webdriver.Chrome(executable_path=path_to_chromedriver)
+
+driver.get('https://www.mcxindia.com/market-data/spot-market-price')
+
+wait = WebDriverWait(driver, 10)
+
+assetDd = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#ctl00_cph_InnerContainerRight_C004_ddlSymbols_Input')))
+assetDd.click()
+
+elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '#ctl00_cph_InnerContainerRight_C004_ddlSymbols_DropDown ul>li')))
+
+for element in elements:
+    if element.text == "GOLD":
+        element.click()
+        break
+
+element = wait.until(EC.element_to_be_clickable((By.ID, 'ctl00_cph_InnerContainerRight_C004_ddlLocationArchive')))
+element.click()
+
+selectSession = Select(wait.until(EC.presence_of_element_located((By.ID, 'cph_InnerContainerRight_C004_ddlSession'))))
+selectSession.select_by_value('2')
+
+fromDateBox = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#txtFromDate.hasDatepick')))
+fromDateBox.click()
+
+select_year = Select(wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "select[title='Change the year']"))))
+select_year.select_by_visible_text('2023')
+
+select_month = Select(wait.until(EC.presence_of_element_located((By.ID, 'cph_InnerContainerRight_C004_ddlSession'))))
+select_month.select_by_value('11/2023')
+
+dayFrom = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[title='Select Thursday, Jun 1, 2023']")))
+dayFrom.click()
+
+toDateBox = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#txtToDate.hasDatepick')))
+toDateBox.click()
+
+select_year.select_by_visible_text('2024')
+select_month.select_by_value('1/2024')
+
+dayTo = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[title='Select Monday, Jan 1, 2024']")))
+dayFrom.click()
+
+showBtn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a#btnShowArchive')))
+showBtn.click()
