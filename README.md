@@ -1,1 +1,1 @@
-# Python_assignment
+Python project is a web scraper that extracts spot market price data from a specific website, performs some basic data analysis on the extracted data, and saves the results in an Excel file. It utilizes libraries like Selenium, pandas, and selenium-stealth to automate the process and bypass potential anti-bot measures implemented by the target website.
