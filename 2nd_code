@@ -1,0 +1,96 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import pandas as pd
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium_stealth import stealth
+import time
+import random
+
+def main():
+    options = webdriver.ChromeOptions()
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--start-maximized")
+
+    # Random user-agent
+    user_agent = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(80, 100)}.0.{random.randint(4000, 5000)}.124 Safari/537.36"
+    options.add_argument(f"user-agent={user_agent}")
+
+    driver = webdriver.Chrome(options=options)
+
+    # Apply stealth settings
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            )
+
+    url = "https://www.mcxindia.com/market-data/spot-market-price"
+    driver.get(url)
+
+    try:
+        # Wait for the page to fully load
+        time.sleep(random.uniform(5, 10))
+
+        print("Waiting for the commodity dropdown...")
+        commodity_dropdown = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.XPATH, "//select[@name='commodity']"))
+        )
+
+        print("Commodity dropdown found. Selecting 'ALL'...")
+        driver.execute_script("arguments[0].click();", commodity_dropdown)
+        commodity_all_option = driver.find_element(By.XPATH, "//select[@name='commodity']/option[@value='ALL']")
+        driver.execute_script("arguments[0].click();", commodity_all_option)
+
+        # 3. Fill in the given details
+        print("Waiting for the location dropdown...")
+        location_dropdown = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.XPATH, "//select[@name='location']"))
+        )
+        driver.execute_script("arguments[0].click();", location_dropdown)
+        location_all_option = driver.find_element(By.XPATH, "//select[@name='location']/option[@value='ALL']")
+        driver.execute_script("arguments[0].click();", location_all_option)
+
+        # 4. Click on "Show" button to get the table
+        print("Waiting for the 'Show' button...")
+        show_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@type='submit']"))
+        )
+        driver.execute_script("arguments[0].click();", show_button)
+
+        # 5. Extract the table and store it as a Pandas Dataframe
+        print("Waiting for the table to load...")
+        table = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.XPATH, "//table"))
+        )
+        table_html = table.get_attribute("outerHTML")
+        df = pd.read_html(table_html)[0]
+
+        # 6a. Count the total number of rows (i.e., daily data points) in the table
+        num_rows = len(df)
+        print(f"Total number of rows: {num_rows}")
+
+        # 6b. Find the date with highest "Spot Price (Rs.)"
+        highest_price_row = df.loc[df["Spot Price (Rs.)"].idxmax()]
+        print(f"Date with highest Spot Price: {highest_price_row['Commodity']}")
+
+        # 6c. Save the extracted data as a sheet named "Raw Data" in an Excel workbook
+        writer = pd.ExcelWriter("spot_market_data.xlsx", engine="xlsxwriter")
+        df.to_excel(writer, sheet_name="Raw Data", index=False)
+        writer.save()
+
+    except TimeoutException as e:
+        print(f"TimeoutException: {e}")
+    except NoSuchElementException as e:
+        print(f"NoSuchElementException: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    finally:
+        driver.quit()
+
+if _name_ == "_main_":
+    main()
